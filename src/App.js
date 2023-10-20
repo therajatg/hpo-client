@@ -6,9 +6,11 @@ import axios from "axios";
 
 function App() {
   const [searchText, setSearchText] = useState("");
-  const [rowData, setRowData] = useState([]);
+  const [termData, setTermData] = useState([]);
+  const [diseaseData, setDiseaseData] = useState([]);
+  const [active, setActive] = useState(1);
 
-  const columnDefs = [
+  const termColDef = [
     { field: "HP_Terms" },
     { field: "Description" },
     { field: "K" },
@@ -19,16 +21,31 @@ function App() {
     { field: "NV" },
   ];
 
+  const diseaseColDef = [
+    { field: "disease_id" },
+    { field: "disease_name" },
+    { field: "v_count" },
+    { field: "p_count" },
+    { field: "k_count" },
+    { field: "nv_count" },
+    { field: "np_count" },
+    { field: "nk_count" },
+  ];
+
   const handleKeyDown = async (event) => {
     if (event.key === "Enter") {
       if (searchText.trim() === "") {
-        setRowData([]);
+        setTermData([]);
+        setDiseaseData([]);
       } else {
         const res = await axios.get(
           `https://hpo-server.azurewebsites.net/${searchText}`
         );
-        setRowData(res.data);
-        console.log(res);
+        // const res = await axios.get(`http://localhost:8000/${searchText}`);
+        if (res.status === 201) {
+          setTermData(res.data.termData);
+          setDiseaseData(res.data.diseaseData);
+        }
       }
     }
   };
@@ -44,12 +61,50 @@ function App() {
         required
         onKeyDown={handleKeyDown}
       />
-      {rowData?.length > 0 && (
-        <div className="ag-theme-alpine w-full h-full mt-12">
+      <div className="self-start mt-16">
+        {termData?.length > 0 && (
+          <button
+            className={`${
+              active === 1
+                ? "bg-blue-500 text-white"
+                : "bg-transparent text-blue-700 border-blue-500"
+            } font-semibold py-2 px-4 rounded border`}
+            onClick={() => {
+              if (active === 2) setActive(1);
+            }}
+          >
+            Term Results
+          </button>
+        )}
+        {diseaseData?.length > 0 && (
+          <button
+            className={`${
+              active === 2
+                ? "bg-blue-500 text-white"
+                : "bg-transparent text-blue-700 border-blue-500"
+            } font-semibold py-2 px-4 rounded border`}
+            onClick={() => {
+              if (active === 1) setActive(2);
+            }}
+          >
+            Disease Results
+          </button>
+        )}
+      </div>
+      {termData?.length > 0 && active === 1 && (
+        <div className="ag-theme-alpine w-full h-full">
           <AgGridReact
-            rowData={rowData}
-            columnDefs={columnDefs}
-            //@ts-ignore
+            rowData={termData}
+            columnDefs={termColDef}
+            style={{ height: "fit-content", width: "100%" }}
+          ></AgGridReact>
+        </div>
+      )}
+      {diseaseData?.length > 0 && (active === 2 || termData?.length === 0) && (
+        <div className="ag-theme-alpine w-full h-full">
+          <AgGridReact
+            rowData={diseaseData}
+            columnDefs={diseaseColDef}
             style={{ height: "fit-content", width: "100%" }}
           ></AgGridReact>
         </div>
